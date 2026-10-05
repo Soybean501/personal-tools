@@ -10,9 +10,9 @@ export default defineConfig({
       manifest: {
         name: "Personal Tools",
         short_name: "Personal Tools",
-        description: "Small routines. A little care, every day.",
-        theme_color: "#f6f7f2",
-        background_color: "#f6f7f2",
+        description: "Personal routines and activity tracking.",
+        theme_color: "#f5f5f7",
+        background_color: "#f5f5f7",
         display: "standalone",
         start_url: "/",
         scope: "/",

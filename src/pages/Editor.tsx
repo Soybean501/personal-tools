@@ -97,7 +97,7 @@ export function Editor({
             <X />
           </button>
         </div>
-        <p className="muted">Make {tool.name.toLowerCase()} work for you.</p>
+
         <form onSubmit={submit}>
           {draft.routines.map((r) => (
             <fieldset key={r.id}>

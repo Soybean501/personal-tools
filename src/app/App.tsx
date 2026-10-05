@@ -7,7 +7,6 @@ import {
   Clock3,
   Settings,
   SlidersHorizontal,
-  Leaf,
   Download,
   Sun,
   Moon,
@@ -87,7 +86,7 @@ export function App() {
     return (
       <main className="shell">
         <h1>Personal Tools</h1>
-        <p role="status">{error || "Getting your routines ready…"}</p>
+        <p role="status">{error || "Loading…"}</p>
         {error && (
           <button className="primary" onClick={() => location.reload()}>
             Try again
@@ -115,15 +114,6 @@ export function App() {
   return (
     <>
       <main className="shell" aria-busy={busy}>
-        <header className="brand">
-          <span className="brand-mark">
-            <Leaf size={19} />
-          </span>
-          <span>personal tools</span>
-          <span className="local-label">
-            <span /> On this device
-          </span>
-        </header>
         {error && (
           <div className="error" role="alert">
             {error}
@@ -132,48 +122,21 @@ export function App() {
         {view === "home" && (
           <>
             <div className="page-title">
-              <p className="eyebrow">{dateLabel}</p>
-              <h1>
-                A little care,
-                <br />
-                every day<span className="accent-dot">.</span>
-              </h1>
-              <p className="subtitle">Your routines. Your own rhythm.</p>
+              <h1>Today</h1>
+              <p className="muted">{dateLabel}</p>
             </div>
-            <section className="daily-summary">
-              <div>
-                <span className="eyebrow">TODAY’S PROGRESS</span>
-                <h2>
-                  {done}
-                  <span> / {tasks.length} tasks</span>
-                </h2>
-                <p>
-                  {percent === 100 && tasks.length
-                    ? "All done. Enjoy the rest of your day."
-                    : "Small steps add up. You’ve got this."}
-                </p>
-              </div>
-              <div
-                className="progress-ring"
-                style={{
-                  background: `conic-gradient(var(--green) ${percent}%, var(--ring-track) 0)`,
-                }}
-              >
-                <span>
-                  {percent === 100 && tasks.length ? (
-                    <Check size={28} />
-                  ) : (
-                    `${percent}%`
-                  )}
-                </span>
-              </div>
-            </section>
-            <div className="section-heading">
-              <h2>Your tools</h2>
-              <span className="muted">
-                {data.tools.length} everyday essentials
+            <div className="daily-summary">
+              <span>
+                {done} / {tasks.length} tasks complete
               </span>
+              <span>{percent}%</span>
             </div>
+            <progress
+              className="daily-progress"
+              value={done}
+              max={tasks.length || 1}
+              aria-label="Today's task completion"
+            />
             <div className="tool-grid">
               {data.tools.map((t) => {
                 const p = progress(t);
@@ -183,38 +146,17 @@ export function App() {
                     className={`tool-card card ${t.accent}`}
                     onClick={() => go(t.id)}
                   >
-                    <div className="tool-card-top">
-                      <span className="tool-icon">
-                        <ToolIcon id={t.id} />
-                      </span>
-                      <ArrowRight size={20} />
-                    </div>
-                    <h2>{t.name}</h2>
-                    <p>{t.description}</p>
-                    <div className="mini-progress">
-                      <span
-                        style={{
-                          width: `${p.total ? (p.done / p.total) * 100 : 0}%`,
-                        }}
-                      />
-                    </div>
-                    <div className="tool-card-bottom">
-                      <span>
-                        {p.done} of {p.total} done
-                      </span>
-                      <span>
-                        {p.total && p.done === p.total
-                          ? "Complete"
-                          : `${t.routines.length} routines`}
+                    <ToolIcon id={t.id} size={20} />
+                    <div>
+                      <h2>{t.name}</h2>
+                      <span className="muted">
+                        {p.done} / {p.total} complete
                       </span>
                     </div>
+                    <ArrowRight size={17} />
                   </button>
                 );
               })}
-            </div>
-            <div className="section-heading today-heading">
-              <h2>Today’s routines</h2>
-              <span className="muted">Tap to check off</span>
             </div>
             {data.tools.map((t) => (
               <div className={`tool-routines ${t.accent}`} key={t.id}>
@@ -240,9 +182,6 @@ export function App() {
                 </div>
               </div>
             ))}
-            <p className="footnote">
-              <Leaf size={14} /> A moment for yourself, morning and night.
-            </p>
           </>
         )}
         {tool && (
@@ -251,11 +190,7 @@ export function App() {
               <ArrowLeft size={17} /> All tools
             </button>
             <div className={`tool-title ${tool.accent}`}>
-              <span className="tool-icon">
-                <ToolIcon id={tool.id} size={28} />
-              </span>
               <h1>{tool.name}</h1>
-              <p className="subtitle">{tool.description}</p>
             </div>
             <div className="section-heading">
               <div>
@@ -287,19 +222,12 @@ export function App() {
             {!tool.routines.length && (
               <p className="muted">Add your first routine using Edit.</p>
             )}
-            <p className="footnote">
-              Completions are saved for today. Tomorrow starts fresh.
-            </p>
           </>
         )}
         {view === "history" && (
           <>
             <div className="page-title">
-              <p className="eyebrow">ONE DAY AT A TIME</p>
-              <h1>
-                Your activity<span className="accent-dot">.</span>
-              </h1>
-              <p className="subtitle">A record of the care you put in.</p>
+              <h1>History</h1>
             </div>
             <label className="date-filter">
               Show a day{" "}
@@ -393,9 +321,7 @@ export function App() {
               (a) => !historyDay || a.day === historyDay,
             ) && (
               <div className="empty card">
-                <Clock3 size={30} />
-                <h2>A fresh start</h2>
-                <p>Completed tasks will appear here.</p>
+                <p>No activity recorded.</p>
               </div>
             )}
           </>
@@ -403,11 +329,7 @@ export function App() {
         {view === "settings" && (
           <>
             <div className="page-title">
-              <p className="eyebrow">MAKE IT YOURS</p>
-              <h1>
-                Settings<span className="accent-dot">.</span>
-              </h1>
-              <p className="subtitle">Simple tools, just for you.</p>
+              <h1>Settings</h1>
             </div>
             <section className="settings-section card">
               <h2>Appearance</h2>
@@ -436,7 +358,7 @@ export function App() {
               </div>
             </section>
             <section className="settings-section card">
-              <h2>Your routines</h2>
+              <h2>Routines</h2>
               {data.tools.map((t) => (
                 <button
                   key={t.id}
@@ -450,7 +372,7 @@ export function App() {
               ))}
             </section>
             <section className="settings-section card">
-              <h2>Your data</h2>
+              <h2>Data</h2>
               <p>
                 Stored locally on this device. Export a backup before clearing
                 browser data or changing your phone.
