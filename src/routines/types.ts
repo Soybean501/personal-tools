@@ -1,4 +1,14 @@
-export interface Task {
+export type Schedule =
+  | { kind: "daily" }
+  | { kind: "weekdays"; days: number[] }
+  | { kind: "interval"; every: number; start: string };
+
+interface Scheduled {
+  schedule?: Schedule;
+  days?: number[]; // Legacy routine weekday setting.
+}
+
+export interface Task extends Scheduled {
   id: string;
   name: string;
 }
@@ -7,12 +17,11 @@ export interface Routine {
   name: string;
   tasks: Task[];
 }
-export interface Tool {
+export interface Tool extends Scheduled {
   id: string;
   name: string;
   description: string;
   icon?: string;
-  days?: number[]; // JavaScript weekday: Sunday = 0. Missing means every day.
   accent: "sage" | "blue";
   routines: Routine[];
 }
@@ -30,6 +39,7 @@ export interface Activity {
 }
 export interface AppData {
   version: 1;
+  schedulingVersion?: 1;
   tools: Tool[];
   activity: Activity[];
   theme: "system" | "light" | "dark";
@@ -86,17 +96,102 @@ export const weekdays = [
   { day: 6, label: "Saturday", short: "Sat" },
   { day: 0, label: "Sunday", short: "Sun" },
 ];
-export function isScheduled(tool: Tool, day: string): boolean {
+// Calendar-day arithmetic deliberately ignores DST and the device's UTC offset.
+function dayNumber(day: string): number {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return NaN;
+  const value = Date.parse(`${day}T00:00:00Z`);
+  return Number.isFinite(value) &&
+    new Date(value).toISOString().slice(0, 10) === day
+    ? value / 86400000
+    : NaN;
+}
+export function effectiveSchedule(item: Scheduled): Schedule {
   return (
-    tool.days === undefined ||
-    tool.days.includes(new Date(`${day}T12:00:00`).getDay())
+    item.schedule ??
+    (item.days ? { kind: "weekdays", days: item.days } : { kind: "daily" })
   );
 }
-export function scheduleLabel(tool: Tool): string {
-  return tool.days === undefined || tool.days.length === 7
-    ? "Every day"
-    : weekdays
-        .filter((x) => tool.days!.includes(x.day))
-        .map((x) => x.short)
-        .join(", ");
+export function validSchedule(schedule: Schedule): boolean {
+  if (schedule.kind === "daily") return true;
+  if (schedule.kind === "weekdays")
+    return (
+      schedule.days.length > 0 &&
+      schedule.days.every(
+        (day) => Number.isInteger(day) && day >= 0 && day <= 6,
+      )
+    );
+  return (
+    Number.isInteger(schedule.every) &&
+    schedule.every >= 2 &&
+    schedule.every <= 365 &&
+    Number.isFinite(dayNumber(schedule.start))
+  );
+}
+export function isScheduled(item: Scheduled, day: string): boolean {
+  const schedule = effectiveSchedule(item);
+  if (!validSchedule(schedule)) return false;
+  if (schedule.kind === "daily") return true;
+  if (schedule.kind === "weekdays")
+    return schedule.days.includes(new Date(`${day}T12:00:00`).getDay());
+  const elapsed = dayNumber(day) - dayNumber(schedule.start);
+  return elapsed >= 0 && elapsed % schedule.every === 0;
+}
+export function scheduleLabel(item: Scheduled): string {
+  const schedule = effectiveSchedule(item);
+  if (
+    schedule.kind === "daily" ||
+    (schedule.kind === "weekdays" && schedule.days.length === 7)
+  )
+    return "Every day";
+  if (schedule.kind === "interval")
+    return schedule.every === 2
+      ? "Every other day"
+      : `Every ${schedule.every} days`;
+  return weekdays
+    .filter((x) => schedule.days.includes(x.day))
+    .map((x) => x.short)
+    .join(", ");
+}
+export function scheduledTasks(tool: Tool, day: string): Task[] {
+  return isScheduled(tool, day)
+    ? tool.routines.flatMap((r) => r.tasks.filter((t) => isScheduled(t, day)))
+    : [];
+}
+
+// Apply the user's Epiduo preference once; subsequent edits always win.
+export function migrateSchedules(data: AppData, today = localDay()): AppData {
+  if (data.schedulingVersion === 1) return data;
+  const lastApplication = data.activity
+    .filter(
+      (a) =>
+        a.taskId === "skin-pm-epiduo" &&
+        !a.undoneAt &&
+        a.day <= today &&
+        Number.isFinite(dayNumber(a.day)),
+    )
+    .map((a) => a.day)
+    .sort()
+    .at(-1);
+  return {
+    ...data,
+    schedulingVersion: 1,
+    tools: data.tools.map((tool) => ({
+      ...tool,
+      routines: tool.routines.map((routine) => ({
+        ...routine,
+        tasks: routine.tasks.map((task) =>
+          task.id === "skin-pm-epiduo" && !task.schedule
+            ? {
+                ...task,
+                schedule: {
+                  kind: "interval",
+                  every: 2,
+                  start: lastApplication ?? today,
+                },
+              }
+            : task,
+        ),
+      })),
+    })),
+  };
 }

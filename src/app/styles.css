@@ -737,3 +737,23 @@ body:has(.modal-backdrop) {
   color: var(--muted);
   margin-top: 4px;
 }
+.task-editor {
+  margin-bottom: 16px;
+}
+.task-repeat summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+  min-height: 44px;
+  padding: 10px 0;
+}
+.schedule-picker input,
+.schedule-picker select {
+  width: 100%;
+  min-width: 0;
+}
+.schedule-picker p {
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}

@@ -57,7 +57,7 @@ Cloudflare handles notification settings only. Task/activity synchronization is 
 - `scripts`: explicit deployment and release commands
 - `tests`: completion/undo, day isolation and persistent storage tests
 
-Tool behavior is data-driven. Routine and task names can be edited; tasks and routines can be added or removed. IDs remain stable on rename. Deleted tasks retain their historical records. New tool definitions seed fresh installs; existing installs keep their saved configuration.
+Tool behavior is data-driven. Routine and task names can be edited; tasks and routines can be added or removed. Routines and individual tasks have a Repeat setting: every day, every other day, selected weekdays, or every N days (2–365). Interval schedules use a start date and local calendar days, continue across week/month boundaries and daylight saving, and do not shift when a task is skipped. A task appears only when both its own schedule and its parent routine are due; off-day tasks are excluded from progress. Task repeat controls expand under “Change repeat” in the editor. Existing weekday schedules remain supported. On the first load after this update, the built-in Epiduo task switches to every other day, anchored to its latest active completion (or today if none exists). This migration saves once and preserves subsequent user edits and activity. IDs remain stable on rename. Deleted tasks retain their historical records. New tool definitions seed fresh installs; existing installs keep their saved configuration.
 
 ## Local data
 

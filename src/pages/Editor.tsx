@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import { ToolIcon, routineIcons } from "../components/Icon";
-import { weekdays, type Tool } from "../routines/types";
+import {
+  effectiveSchedule,
+  scheduleLabel,
+  validSchedule,
+  type Task,
+  type Tool,
+} from "../routines/types";
+import { SchedulePicker } from "./SchedulePicker";
 export function Editor({
   tool,
   onSave,
@@ -18,9 +25,9 @@ export function Editor({
     const elements = () =>
       Array.from(
         element.querySelectorAll<HTMLElement>(
-          "button:not(:disabled),input:not(:disabled),select:not(:disabled)",
+          "button:not(:disabled),input:not(:disabled),select:not(:disabled),summary",
         ),
-      );
+      ).filter((item) => item.getClientRects().length > 0);
     elements()[0]?.focus();
     const handle = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -54,6 +61,24 @@ export function Editor({
       ...draft,
       routines: draft.routines.map((r) => (r.id === id ? { ...r, name } : r)),
     });
+  const updateTask = (
+    routineId: string,
+    taskId: string,
+    patch: Partial<Task>,
+  ) =>
+    setDraft({
+      ...draft,
+      routines: draft.routines.map((r) =>
+        r.id === routineId
+          ? {
+              ...r,
+              tasks: r.tasks.map((t) =>
+                t.id === taskId ? { ...t, ...patch } : t,
+              ),
+            }
+          : r,
+      ),
+    });
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (
@@ -65,8 +90,14 @@ export function Editor({
       setError("Give the routine, each task list and every task a name.");
       return;
     }
-    if (draft.days?.length === 0) {
-      setError("Choose at least one day for this routine.");
+    if (
+      ![draft, ...draft.routines.flatMap((r) => r.tasks)].every((item) =>
+        validSchedule(effectiveSchedule(item)),
+      )
+    ) {
+      setError(
+        "Choose at least one weekday, or a valid start date and repeat interval (2–365 days).",
+      );
       return;
     }
     setBusy(true);
@@ -110,7 +141,7 @@ export function Editor({
           </button>
         </div>
 
-        <form onSubmit={submit}>
+        <form onSubmit={submit} noValidate>
           <fieldset disabled={busy} className="routine-details">
             <legend>Routine details</legend>
             <label className="editor-field">
@@ -161,45 +192,17 @@ export function Editor({
                 <option value="blue">Soft blue</option>
               </select>
             </label>
-            <fieldset className="schedule-picker">
-              <legend>Repeat on</legend>
-              <button
-                type="button"
-                className="text-button"
-                onClick={() => setDraft({ ...draft, days: undefined })}
-              >
-                Every day
-              </button>
-              <div className="weekday-options">
-                {weekdays.map(({ day, label, short }) => {
-                  const selected =
-                    draft.days === undefined || draft.days.includes(day);
-                  return (
-                    <button
-                      key={day}
-                      type="button"
-                      aria-label={label}
-                      aria-pressed={selected}
-                      className={selected ? "selected" : ""}
-                      onClick={() => {
-                        const days = draft.days ?? weekdays.map((x) => x.day);
-                        setDraft({
-                          ...draft,
-                          days: selected
-                            ? days.filter((x) => x !== day)
-                            : [...days, day],
-                        });
-                      }}
-                    >
-                      {short}
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="muted">
-                Only shown on Today and counted towards progress on these days.
-              </p>
-            </fieldset>
+            <SchedulePicker
+              label="Routine"
+              schedule={effectiveSchedule(draft)}
+              onChange={(schedule) =>
+                setDraft({ ...draft, schedule, days: undefined })
+              }
+            />
+            <p className="muted">
+              Tasks appear on the routine's days. Give individual tasks their
+              own repeat below.
+            </p>
           </fieldset>
           <fieldset disabled={busy} className="task-lists">
             <legend>Task lists</legend>
@@ -228,49 +231,65 @@ export function Editor({
                   </button>
                 </div>
                 {r.tasks.map((t) => (
-                  <div className="edit-row" key={t.id}>
-                    <input
-                      aria-label="Task name"
-                      value={t.name}
-                      maxLength={100}
-                      onChange={(e) =>
-                        setDraft({
-                          ...draft,
-                          routines: draft.routines.map((x) =>
-                            x.id === r.id
-                              ? {
-                                  ...x,
-                                  tasks: x.tasks.map((y) =>
-                                    y.id === t.id
-                                      ? { ...y, name: e.target.value }
-                                      : y,
-                                  ),
-                                }
-                              : x,
-                          ),
-                        })
-                      }
-                    />
-                    <button
-                      type="button"
-                      className="icon-button danger"
-                      aria-label={`Remove ${t.name}`}
-                      onClick={() =>
-                        setDraft({
-                          ...draft,
-                          routines: draft.routines.map((x) =>
-                            x.id === r.id
-                              ? {
-                                  ...x,
-                                  tasks: x.tasks.filter((y) => y.id !== t.id),
-                                }
-                              : x,
-                          ),
-                        })
-                      }
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                  <div className="task-editor" key={t.id}>
+                    <div className="edit-row">
+                      <input
+                        aria-label="Task name"
+                        value={t.name}
+                        maxLength={100}
+                        onChange={(e) =>
+                          setDraft({
+                            ...draft,
+                            routines: draft.routines.map((x) =>
+                              x.id === r.id
+                                ? {
+                                    ...x,
+                                    tasks: x.tasks.map((y) =>
+                                      y.id === t.id
+                                        ? { ...y, name: e.target.value }
+                                        : y,
+                                    ),
+                                  }
+                                : x,
+                            ),
+                          })
+                        }
+                      />
+                      <button
+                        type="button"
+                        className="icon-button danger"
+                        aria-label={`Remove ${t.name}`}
+                        onClick={() =>
+                          setDraft({
+                            ...draft,
+                            routines: draft.routines.map((x) =>
+                              x.id === r.id
+                                ? {
+                                    ...x,
+                                    tasks: x.tasks.filter((y) => y.id !== t.id),
+                                  }
+                                : x,
+                            ),
+                          })
+                        }
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                    <details className="task-repeat">
+                      <summary>{scheduleLabel(t)} · Change repeat</summary>
+                      <SchedulePicker
+                        label={t.name || "Task"}
+                        schedule={effectiveSchedule(t)}
+                        onChange={(schedule) =>
+                          updateTask(r.id, t.id, { schedule })
+                        }
+                      />
+                      <p className="muted">
+                        Only appears when this task and its routine are
+                        scheduled.
+                      </p>
+                    </details>
                   </div>
                 ))}
                 <button

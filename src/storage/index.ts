@@ -1,5 +1,5 @@
 import { openDB } from "idb";
-import type { AppData } from "../routines/types";
+import { migrateSchedules, type AppData } from "../routines/types";
 import { initialData } from "../tools";
 const database = () =>
   openDB("personal-tools", 1, {
@@ -9,7 +9,10 @@ const database = () =>
   });
 export async function loadData(): Promise<AppData> {
   const db = await database();
-  return (await db.get("app", "data")) ?? initialData();
+  const saved = await db.get("app", "data");
+  const data = migrateSchedules(saved ?? initialData());
+  if (!saved || data !== saved) await db.put("app", data, "data");
+  return data;
 }
 export async function saveData(data: AppData) {
   const db = await database();

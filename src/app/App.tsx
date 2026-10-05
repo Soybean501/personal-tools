@@ -17,6 +17,7 @@ import {
   isCompleted,
   isScheduled,
   scheduleLabel,
+  scheduledTasks,
   localDay,
   toggleTask,
   type AppData,
@@ -100,13 +101,13 @@ export function App() {
       </main>
     );
   const todayTools = data.tools.filter((t) => isScheduled(t, day));
-  const tasks = todayTools.flatMap((t) => t.routines.flatMap((r) => r.tasks));
+  const tasks = todayTools.flatMap((t) => scheduledTasks(t, day));
   const done = tasks.filter((t) =>
     isCompleted(data.activity, t.id, day),
   ).length;
   const percent = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
   const progress = (t: Tool) => {
-    const ts = t.routines.flatMap((r) => r.tasks);
+    const ts = scheduledTasks(t, day);
     return {
       total: ts.length,
       done: ts.filter((x) => isCompleted(data.activity, x.id, day)).length,
@@ -274,8 +275,8 @@ export function App() {
             </div>
             {!isScheduled(tool, day) && (
               <p className="empty card">
-                Scheduled for {scheduleLabel(tool)}. You can change the days
-                using Edit.
+                Repeat: {scheduleLabel(tool)}. You can change the schedule using
+                Edit.
               </p>
             )}
             {!tool.routines.length && (
