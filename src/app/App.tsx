@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
-  ArrowRight,
+  ChevronDown,
+  Plus,
   Check,
   Home,
   Clock3,
@@ -33,6 +34,7 @@ export function App() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<Tool>();
+  const [selectedRoutine, setSelectedRoutine] = useState<string>();
   const [historyDay, setHistoryDay] = useState("");
   useEffect(() => {
     loadData()
@@ -114,7 +116,7 @@ export function App() {
   });
   return (
     <>
-      <main className="shell" aria-busy={busy}>
+      <main className="shell" aria-busy={busy} inert={!!editing}>
         {error && (
           <div className="error" role="alert">
             {error}
@@ -138,51 +140,95 @@ export function App() {
               max={tasks.length || 1}
               aria-label="Today's task completion"
             />
-            <div className="tool-grid">
+            <div className="section-heading">
+              <div>
+                <h2>Your routines</h2>
+                <p className="muted">Choose a routine to reveal its tasks.</p>
+              </div>
+            </div>
+            <div className="routine-selector">
               {data.tools.map((t) => {
                 const p = progress(t);
+                const expanded = selectedRoutine === t.id;
                 return (
-                  <button
-                    key={t.id}
-                    className={`tool-card card ${t.accent}`}
-                    onClick={() => go(t.id)}
-                  >
-                    <ToolIcon id={t.id} size={20} />
-                    <div>
-                      <h2>{t.name}</h2>
-                      <span className="muted">
-                        {p.done} / {p.total} complete
+                  <div className={`routine-choice ${t.accent}`} key={t.id}>
+                    <button
+                      className={`tool-card card ${expanded ? "selected" : ""}`}
+                      aria-expanded={expanded}
+                      aria-controls={`tasks-${t.id}`}
+                      onClick={() =>
+                        setSelectedRoutine(expanded ? undefined : t.id)
+                      }
+                    >
+                      <span className="routine-avatar">
+                        <ToolIcon id={t.id} icon={t.icon} size={28} />
                       </span>
-                    </div>
-                    <ArrowRight size={17} />
-                  </button>
+                      <div className="routine-card-copy">
+                        <h2>{t.name}</h2>
+                        <span className="muted">
+                          {p.done} of {p.total} tasks complete
+                        </span>
+                        <progress
+                          value={p.done}
+                          max={p.total || 1}
+                          aria-label={`${t.name} completion`}
+                        />
+                      </div>
+                      <ChevronDown
+                        className={expanded ? "rotated" : ""}
+                        size={22}
+                      />
+                    </button>
+                  </div>
                 );
               })}
+              {data.tools
+                .filter((t) => t.id === selectedRoutine)
+                .map((t) => (
+                  <div
+                    key={t.id}
+                    id={`tasks-${t.id}`}
+                    className={`routine-dropdown ${t.accent}`}
+                  >
+                    <div className="section-heading">
+                      <span className="muted">
+                        {t.description || "A little time for yourself."}
+                      </span>
+                      <button
+                        className="text-button"
+                        onClick={() => setEditing(t)}
+                      >
+                        <SlidersHorizontal size={16} /> Edit
+                      </button>
+                    </div>
+                    <div className="routine-grid">
+                      {t.routines.map((r) => (
+                        <RoutineCard
+                          key={r.id}
+                          routine={r}
+                          activity={data.activity}
+                          day={day}
+                          disabled={busy}
+                          onToggle={(task) => {
+                            if (!busy)
+                              void persist(
+                                toggleTask(current.current!, t, r, task),
+                              ).catch(() => {});
+                          }}
+                        />
+                      ))}
+                    </div>
+                    {!t.routines.length && (
+                      <p className="empty">Add a task list using Edit.</p>
+                    )}
+                  </div>
+                ))}
+              {!data.tools.length && (
+                <div className="empty card">
+                  Create your first routine in Settings.
+                </div>
+              )}
             </div>
-            {data.tools.map((t) => (
-              <div className={`tool-routines ${t.accent}`} key={t.id}>
-                <div className="tool-label">
-                  <ToolIcon id={t.id} size={17} />
-                  <h3>{t.name}</h3>
-                </div>
-                <div className="routine-grid">
-                  {t.routines.map((r) => (
-                    <RoutineCard
-                      key={r.id}
-                      routine={r}
-                      activity={data.activity}
-                      day={day}
-                      onToggle={(task) => {
-                        if (!busy)
-                          void persist(
-                            toggleTask(current.current!, t, r, task),
-                          ).catch(() => {});
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
           </>
         )}
         {tool && (
@@ -361,17 +407,39 @@ export function App() {
             </section>
             <section className="settings-section card">
               <h2>Routines</h2>
+              <p>Create your own routines and customise their task lists.</p>
               {data.tools.map((t) => (
                 <button
                   key={t.id}
                   className="settings-row"
                   onClick={() => setEditing(t)}
                 >
-                  <ToolIcon id={t.id} size={20} />
+                  <ToolIcon id={t.id} icon={t.icon} size={20} />
                   <span>{t.name}</span>
                   <SlidersHorizontal size={18} />
                 </button>
               ))}
+              <button
+                className="text-button"
+                onClick={() =>
+                  setEditing({
+                    id: crypto.randomUUID(),
+                    name: "",
+                    description: "",
+                    icon: "leaf",
+                    accent: "sage",
+                    routines: [
+                      {
+                        id: crypto.randomUUID(),
+                        name: "Daily",
+                        tasks: [{ id: crypto.randomUUID(), name: "" }],
+                      },
+                    ],
+                  })
+                }
+              >
+                <Plus size={18} /> Add routine
+              </button>
             </section>
             <section className="settings-section card">
               <h2>Data</h2>
@@ -416,7 +484,11 @@ export function App() {
           </>
         )}
       </main>
-      <nav className="bottom-nav" aria-label="Main navigation">
+      <nav
+        className="bottom-nav"
+        aria-label="Main navigation"
+        inert={!!editing}
+      >
         {[
           { id: "home", label: "Today", icon: Home },
           { id: "history", label: "History", icon: Clock3 },
@@ -440,7 +512,9 @@ export function App() {
           onSave={(t) =>
             persist({
               ...current.current!,
-              tools: current.current!.tools.map((x) => (x.id === t.id ? t : x)),
+              tools: current.current!.tools.some((x) => x.id === t.id)
+                ? current.current!.tools.map((x) => (x.id === t.id ? t : x))
+                : [...current.current!.tools, t],
             })
           }
         />

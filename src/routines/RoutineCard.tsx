@@ -5,11 +5,13 @@ export function RoutineCard({
   activity,
   day,
   onToggle,
+  disabled = false,
 }: {
   routine: Routine;
   activity: Activity[];
   day: string;
   onToggle: (task: Task) => void;
+  disabled?: boolean;
 }) {
   const count = routine.tasks.filter((t) =>
     isCompleted(activity, t.id, day),
@@ -40,6 +42,7 @@ export function RoutineCard({
               key={task.id}
               onClick={() => onToggle(task)}
               aria-pressed={done}
+              disabled={disabled}
             >
               <span className="checkbox">
                 {done && <Check size={16} strokeWidth={3} />}
