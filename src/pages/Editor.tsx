@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import { ToolIcon, routineIcons } from "../components/Icon";
-import type { Tool } from "../routines/types";
+import { weekdays, type Tool } from "../routines/types";
 export function Editor({
   tool,
   onSave,
@@ -63,6 +63,10 @@ export function Editor({
       )
     ) {
       setError("Give the routine, each task list and every task a name.");
+      return;
+    }
+    if (draft.days?.length === 0) {
+      setError("Choose at least one day for this routine.");
       return;
     }
     setBusy(true);
@@ -157,6 +161,45 @@ export function Editor({
                 <option value="blue">Soft blue</option>
               </select>
             </label>
+            <fieldset className="schedule-picker">
+              <legend>Repeat on</legend>
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => setDraft({ ...draft, days: undefined })}
+              >
+                Every day
+              </button>
+              <div className="weekday-options">
+                {weekdays.map(({ day, label, short }) => {
+                  const selected =
+                    draft.days === undefined || draft.days.includes(day);
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      aria-label={label}
+                      aria-pressed={selected}
+                      className={selected ? "selected" : ""}
+                      onClick={() => {
+                        const days = draft.days ?? weekdays.map((x) => x.day);
+                        setDraft({
+                          ...draft,
+                          days: selected
+                            ? days.filter((x) => x !== day)
+                            : [...days, day],
+                        });
+                      }}
+                    >
+                      {short}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="muted">
+                Only shown on Today and counted towards progress on these days.
+              </p>
+            </fieldset>
           </fieldset>
           <fieldset disabled={busy} className="task-lists">
             <legend>Task lists</legend>

@@ -15,6 +15,8 @@ import {
 import { loadData, saveData } from "../storage";
 import {
   isCompleted,
+  isScheduled,
+  scheduleLabel,
   localDay,
   toggleTask,
   type AppData,
@@ -97,7 +99,8 @@ export function App() {
         )}
       </main>
     );
-  const tasks = data.tools.flatMap((t) => t.routines.flatMap((r) => r.tasks));
+  const todayTools = data.tools.filter((t) => isScheduled(t, day));
+  const tasks = todayTools.flatMap((t) => t.routines.flatMap((r) => r.tasks));
   const done = tasks.filter((t) =>
     isCompleted(data.activity, t.id, day),
   ).length;
@@ -147,7 +150,7 @@ export function App() {
               </div>
             </div>
             <div className="routine-selector">
-              {data.tools.map((t) => {
+              {todayTools.map((t) => {
                 const p = progress(t);
                 const expanded = selectedRoutine === t.id;
                 return (
@@ -182,7 +185,7 @@ export function App() {
                   </div>
                 );
               })}
-              {data.tools
+              {todayTools
                 .filter((t) => t.id === selectedRoutine)
                 .map((t) => (
                   <div
@@ -223,9 +226,11 @@ export function App() {
                     )}
                   </div>
                 ))}
-              {!data.tools.length && (
+              {!todayTools.length && (
                 <div className="empty card">
-                  Create your first routine in Settings.
+                  {data.tools.length
+                    ? "No routines scheduled for today. Enjoy your day!"
+                    : "Create your first routine in Settings."}
                 </div>
               )}
             </div>
@@ -251,21 +256,28 @@ export function App() {
               </button>
             </div>
             <div className={`routine-grid ${tool.accent}`}>
-              {tool.routines.map((r) => (
-                <RoutineCard
-                  key={r.id}
-                  routine={r}
-                  activity={data.activity}
-                  day={day}
-                  onToggle={(task) => {
-                    if (!busy)
-                      void persist(
-                        toggleTask(current.current!, tool, r, task),
-                      ).catch(() => {});
-                  }}
-                />
-              ))}
+              {isScheduled(tool, day) &&
+                tool.routines.map((r) => (
+                  <RoutineCard
+                    key={r.id}
+                    routine={r}
+                    activity={data.activity}
+                    day={day}
+                    onToggle={(task) => {
+                      if (!busy)
+                        void persist(
+                          toggleTask(current.current!, tool, r, task),
+                        ).catch(() => {});
+                    }}
+                  />
+                ))}
             </div>
+            {!isScheduled(tool, day) && (
+              <p className="empty card">
+                Scheduled for {scheduleLabel(tool)}. You can change the days
+                using Edit.
+              </p>
+            )}
             {!tool.routines.length && (
               <p className="muted">Add your first routine using Edit.</p>
             )}
@@ -415,7 +427,10 @@ export function App() {
                   onClick={() => setEditing(t)}
                 >
                   <ToolIcon id={t.id} icon={t.icon} size={20} />
-                  <span>{t.name}</span>
+                  <span>
+                    {t.name}
+                    <small className="schedule-label">{scheduleLabel(t)}</small>
+                  </span>
                   <SlidersHorizontal size={18} />
                 </button>
               ))}

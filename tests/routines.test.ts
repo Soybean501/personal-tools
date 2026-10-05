@@ -1,9 +1,31 @@
 import "fake-indexeddb/auto";
 import { describe, it, expect } from "vitest";
 import { initialData } from "../src/tools";
-import { isCompleted, localDay, toggleTask } from "../src/routines/types";
+import {
+  isScheduled,
+  scheduleLabel,
+  isCompleted,
+  localDay,
+  toggleTask,
+} from "../src/routines/types";
 import { loadData, saveData } from "../src/storage";
 describe("daily routines", () => {
+  it("keeps existing routines daily and schedules volunteering only on Tuesdays", () => {
+    const tool = initialData().tools[0];
+    expect(isScheduled(tool, "2026-10-05")).toBe(true);
+    expect(isScheduled(tool, "2026-10-06")).toBe(true);
+    tool.days = [2];
+    expect(isScheduled(tool, "2026-10-05")).toBe(false);
+    expect(isScheduled(tool, "2026-10-06")).toBe(true);
+    expect(isScheduled(tool, "2026-10-07")).toBe(false);
+    expect(isScheduled(tool, "2026-10-13")).toBe(true);
+    expect(scheduleLabel(tool)).toBe("Tue");
+    tool.days = [0, 6];
+    expect(isScheduled(tool, "2026-10-10")).toBe(true);
+    expect(isScheduled(tool, "2026-10-11")).toBe(true);
+    expect(isScheduled(tool, "2026-10-12")).toBe(false);
+  });
+
   it("records snapshots and undo timestamps without losing history", () => {
     const data = initialData(),
       tool = data.tools[0],
@@ -51,6 +73,7 @@ describe("daily routines", () => {
   it("persists configuration and history through IndexedDB reloads", async () => {
     const data = initialData();
     data.tools[0].routines[0].tasks[0].name = "My cleanser";
+    data.tools[0].days = [2];
     const next = toggleTask(
       data,
       data.tools[0],

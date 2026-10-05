@@ -12,6 +12,7 @@ export interface Tool {
   name: string;
   description: string;
   icon?: string;
+  days?: number[]; // JavaScript weekday: Sunday = 0. Missing means every day.
   accent: "sage" | "blue";
   routines: Routine[];
 }
@@ -74,4 +75,28 @@ export function toggleTask(
           },
         ],
   };
+}
+
+export const weekdays = [
+  { day: 1, label: "Monday", short: "Mon" },
+  { day: 2, label: "Tuesday", short: "Tue" },
+  { day: 3, label: "Wednesday", short: "Wed" },
+  { day: 4, label: "Thursday", short: "Thu" },
+  { day: 5, label: "Friday", short: "Fri" },
+  { day: 6, label: "Saturday", short: "Sat" },
+  { day: 0, label: "Sunday", short: "Sun" },
+];
+export function isScheduled(tool: Tool, day: string): boolean {
+  return (
+    tool.days === undefined ||
+    tool.days.includes(new Date(`${day}T12:00:00`).getDay())
+  );
+}
+export function scheduleLabel(tool: Tool): string {
+  return tool.days === undefined || tool.days.length === 7
+    ? "Every day"
+    : weekdays
+        .filter((x) => tool.days!.includes(x.day))
+        .map((x) => x.short)
+        .join(", ");
 }

@@ -713,3 +713,27 @@ body:has(.modal-backdrop) {
     transition: none;
   }
 }
+.weekday-options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.weekday-options button {
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 14px;
+}
+.weekday-options button.selected {
+  background: var(--soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.schedule-label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
