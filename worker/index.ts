@@ -74,8 +74,14 @@ async function readBody(request: Request) {
 async function verifySetupKey(provided: string, expected: string) {
   const encoder = new TextEncoder();
   const [left, right] = await Promise.all([
-    crypto.subtle.digest("SHA-256", encoder.encode(provided)),
-    crypto.subtle.digest("SHA-256", encoder.encode(expected)),
+    crypto.subtle.digest(
+      "SHA-256",
+      encoder.encode(provided.replace(/[\s\-–—]/g, "").toLowerCase()),
+    ),
+    crypto.subtle.digest(
+      "SHA-256",
+      encoder.encode(expected.replace(/[\s\-–—]/g, "").toLowerCase()),
+    ),
   ]);
   return crypto.subtle.timingSafeEqual(left, right);
 }

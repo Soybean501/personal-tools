@@ -197,6 +197,9 @@ export function NotificationsSettings() {
                 value={setup}
                 onChange={(e) => setSetup(e.target.value)}
                 autoComplete="off"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
               />
             </label>
           )}
