@@ -113,7 +113,7 @@ async function send(
       privateKey: env.VAPID_PRIVATE_KEY,
     },
   );
-  return fetch(sub.endpoint, { ...request, redirect: "error" });
+  return fetch(sub.endpoint, { ...request, redirect: "manual" });
 }
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -228,7 +228,14 @@ export default {
         return json({ ok: true });
       }
       return json({ error: "Not found" }, 404);
-    } catch {
+    } catch (error) {
+      console.error(
+        JSON.stringify({
+          message: "Reminder request failed",
+          path,
+          error: error instanceof Error ? error.message : String(error),
+        }),
+      );
       return json({ error: "Could not process request" }, 500);
     }
   },
