@@ -116,7 +116,7 @@ export function NotificationsSettings() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Setup-Key": setup.trim(),
+            "X-Setup-Key": setup.replace(/[\s\-–—]/g, "").toLowerCase(),
           },
           body: JSON.stringify({ subscription: subscription.toJSON() }),
         });
