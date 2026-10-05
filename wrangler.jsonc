@@ -1,0 +1,33 @@
+{
+  "name": "personal-tools-reminders",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-05",
+  "triggers": {
+    "crons": [
+      "* * * * *"
+    ]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "personal-tools-reminders",
+      "database_id": "5cf62640-5614-41b4-a9e7-5a4f7c1a1225"
+    }
+  ],
+  "vars": {
+    "VAPID_SUBJECT": "https://personal-tools.surge.sh"
+  },
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.01
+    }
+  }
+}

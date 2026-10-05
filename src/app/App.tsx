@@ -22,6 +22,7 @@ import {
 import { RoutineCard } from "../routines/RoutineCard";
 import { ToolIcon } from "../components/Icon";
 import { Editor } from "../pages/Editor";
+import { NotificationsSettings } from "../notifications/NotificationsSettings";
 type View = "home" | "history" | "settings" | string;
 export function App() {
   const saving = useRef(false);
@@ -331,6 +332,7 @@ export function App() {
             <div className="page-title">
               <h1>Settings</h1>
             </div>
+            <NotificationsSettings />
             <section className="settings-section card">
               <h2>Appearance</h2>
               <div className="theme-options">

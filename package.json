@@ -5,19 +5,27 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && tsc -p worker/tsconfig.json && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",
-    "deploy": "npm run build && node scripts/deploy.mjs",
-    "release": "node scripts/release.mjs"
+    "deploy": "npm run build && npm run deploy:worker && node scripts/deploy.mjs",
+    "release": "node scripts/release.mjs",
+    "check:worker": "tsc -p worker/tsconfig.json",
+    "notifications:keys": "node scripts/notification-keys.mjs",
+    "deploy:worker": "npm run check:worker && wrangler deploy",
+    "db:migrate": "wrangler d1 execute personal-tools-reminders --remote --file=worker/schema.sql",
+    "db:migrate:local": "wrangler d1 execute personal-tools-reminders --local --file=worker/schema.sql",
+    "types:worker": "wrangler types worker/env.d.ts --include-runtime=false"
   },
   "dependencies": {
+    "@block65/webcrypto-web-push": "^2.0.0",
     "idb": "^8.0.3",
     "lucide-react": "^0.468.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261005.1",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.0",
@@ -27,6 +35,7 @@
     "typescript": "~5.9.3",
     "vite": "^7.1.0",
     "vite-plugin-pwa": "^1.0.3",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "wrangler": "^4.147.0"
   }
 }

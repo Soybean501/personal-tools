@@ -11,7 +11,7 @@ const message = process.argv[2],
     (existsSync("CNAME") ? readFileSync("CNAME", "utf8").trim() : "");
 if (!message || !domain) {
   console.error(
-    'Usage: npm run release -- "Commit message" your-domain.surge.sh\nRequires an initialized Git repo, configured upstream, and Surge login.',
+    'Usage: npm run release -- "Commit message" your-domain.surge.sh\nRequires an initialized Git repo, configured upstream, Surge login, and Cloudflare login.',
   );
   process.exit(1);
 }
@@ -24,4 +24,5 @@ const changes = spawnSync("git", ["diff", "--cached", "--quiet"]);
 if (changes.status === 1) run("git", ["commit", "-m", message]);
 else if (changes.status !== 0) process.exit(changes.status ?? 1);
 run("git", ["push"]);
+run("npm", ["run", "deploy:worker"]);
 run("node", ["scripts/deploy.mjs", domain]);
